@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Excellentia Provisions</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDF2EE;--ink:#17231C;--mut:#5C6B62;--card:#fff;--line:#D3DDD6;--g:#0F5B3A;--y:#F2A900;--r:#C8402B}
+:root[data-t=dark]{--bg:#0F1612;--ink:#E8EFE9;--mut:#9BAAA0;--card:#18221C;--line:#2A3830;--g:#2E9E68;--r:#EE7058}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,header b{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:.4em 0}
+header{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--g);color:#fff;z-index:5}
+header b{font-size:19px}
+.ic{background:none;border:0;color:#fff;font:inherit;padding:6px 8px;cursor:pointer}
+main{padding:14px 14px 90px;max-width:640px;margin:auto}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;color:var(--mut);padding:14px 0;font:700 14px 'DM Sans';cursor:pointer}
+nav button.on{color:var(--g);box-shadow:inset 0 3px var(--y)}
+input,select{width:100%;padding:12px;margin:4px 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
+label{display:block;font-size:14px;color:var(--mut)}
+.btn{display:inline-block;border:0;border-radius:8px;background:var(--g);color:#fff;padding:13px 16px;font:700 15px 'DM Sans';text-decoration:none;cursor:pointer;text-align:center}
+.btn.ghost{background:none;color:var(--g);border:1px solid var(--g)}
+.btn.danger{background:var(--r)}.btn.sm{padding:8px 11px;font-size:13px;margin-left:6px}.btn.wide{width:100%}
+.slip{background:var(--card);padding:18px 18px 22px;border-top:6px dashed var(--y);border-bottom:6px dashed var(--y);margin:6px 0 18px}
+.slip h2{margin:0 0 8px;font-size:22px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.row small,.item small{display:block;color:var(--mut);font-size:13px}
+.slip .row{border-bottom:1px dashed var(--line)}
+.slip .big{font:800 30px 'Bricolage Grotesque'}
+.bar{display:flex;justify-content:space-between;align-items:center}
+.item{display:flex;justify-content:space-between;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:11px 12px;margin-bottom:6px;color:var(--ink);font:inherit;cursor:pointer}
+.qty button{width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:var(--card);color:var(--ink);font-size:18px;margin:0 8px}
+.mut{color:var(--mut)}.red{color:var(--r)}.r{display:flex;align-items:center}
+.chart{display:flex;align-items:flex-end;gap:8px;height:110px;margin:8px 0 18px}
+.chart div{flex:1;text-align:center;font-size:12px;color:var(--mut)}.chart i{display:block;background:var(--g);border-radius:4px 4px 0 0;min-height:3px;margin-bottom:4px}
+.tag{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--y);color:#17231C}.tag.low{background:var(--r);color:#fff}
+dialog{width:min(92vw,420px);border:0;border-radius:12px;background:var(--card);color:var(--ink);padding:18px}
+dialog::backdrop{background:#0008}
+.acts{display:flex;gap:8px;flex-wrap:wrap}.acts .btn{flex:1}
+pre{white-space:pre-wrap;font:14px/1.5 ui-monospace,monospace;background:var(--bg);padding:12px;border-radius:8px}
+.auth{max-width:360px;margin:12vh auto;padding:20px}.auth .btn{width:100%;margin-top:8px}
+#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;display:none;z-index:9;max-width:90vw}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:right;padding:9px 4px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
+@media print{header,nav,.acts{display:none}}
+:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="app"></div><dialog id="dlg"></dialog><div id="toast"></div>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getFirestore,collection,doc,getDoc,getDocs,addDoc,updateDoc,deleteDoc,setDoc,query,where,orderBy,runTransaction,writeBatch} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+// 1. Paste your Firebase web app config here (Project settings > Your apps > Web app)
+const firebaseConfig={apiKey:'AIzaSyBWOzZlaDHZpDbnnZKoTJUzUzKkJgsfhAw',authDomain:'excellentia-provisions.firebaseapp.com',projectId:'excellentia-provisions',storageBucket:'excellentia-provisions.firebasestorage.app',messagingSenderId:'107623238964',appId:'1:107623238964:web:7309768d998297b1006961'};
+const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getFirestore(fb);
+const $=window.$=s=>document.querySelector(s), N=n=>'₦'+Math.round(Number(n)||0).toLocaleString('en-NG');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sum=(a,k)=>a.reduce((n,x)=>n+Number(x[k]),0), day=d=>new Date(d).toDateString();
+const wa=(ph,t)=>{let n=String(ph||'').replace(/\D/g,'');if(n.startsWith('0'))n='234'+n.slice(1);return 'https://wa.me/'+n+'?text='+encodeURIComponent(t)};
+let me,P=[],C=[],S=[],E=[],cart=[],tab='home';
+const sale=window.sale={dc:0,pay:'cash',cust:'',paid:0};
+const resetSale=()=>Object.assign(sale,{dc:0,pay:'cash',cust:'',paid:0});
+const admin=()=>me?.role==='admin';
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',3500)}
+document.documentElement.dataset.t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+const rows=s=>s.docs.map(d=>({id:d.id,...d.data()}));
+
+onAuthStateChanged(auth,u=>u?start(u):authView());
+async function start(u){
+  const ref=doc(db,'users',u.uid);let s=await getDoc(ref);
+  if(!s.exists()){
+    const name=(u.email||'').split('@')[0];
+    try{const b=writeBatch(db);b.set(ref,{name,role:'admin'});b.set(doc(db,'meta','owner'),{uid:u.uid});await b.commit()}
+    catch(e){await setDoc(ref,{name,role:'staff'})}
+    s=await getDoc(ref);
+  }
+  me=s.data();await load();shell();
+}
+async function load(keys=['products','customers','sales','expenses']){
+  const since=Date.now()-30*864e5,jobs={
+    products:()=>getDocs(query(collection(db,'products'),orderBy('name'))).then(s=>P=rows(s)),
+    customers:()=>getDocs(query(collection(db,'customers'),orderBy('name'))).then(s=>C=rows(s)),
+    sales:()=>getDocs(query(collection(db,'sales'),where('at','>=',since),orderBy('at','desc'))).then(s=>S=rows(s)),
+    expenses:()=>admin()?getDocs(query(collection(db,'expenses'),where('at','>=',since),orderBy('at','desc'))).then(s=>E=rows(s)):0};
+  try{await Promise.all(keys.map(k=>jobs[k]()))}catch(e){toast(e.message)}
+}
+function authView(){
+  $('#app').innerHTML=`<div class="auth"><h1>Excellentia Provisions</h1><p class="mut">Sign in to run your shop. The first account created becomes the owner.</p>
+  <input id="em" type="email" placeholder="Email" autocomplete="email"><input id="pw" type="password" placeholder="Password (6+ characters)" autocomplete="current-password">
+  <button class="btn" id="si">Sign in</button><button class="btn ghost" id="su">Create account</button></div>`;
+  $('#si').onclick=()=>login(signInWithEmailAndPassword);$('#su').onclick=()=>login(createUserWithEmailAndPassword);
+}
+async function login(fn){try{await fn(auth,$('#em').value.trim(),$('#pw').value)}catch(e){toast(e.message.replace('Firebase: ',''))}}
+function shell(){
+  const tabs=[['home','Home'],['sell','Sell'],['stock','Stock'],['debts','Debts']];if(admin())tabs.push(['money','Money']);
+  $('#app').innerHTML=`<header><b>Excellentia Provisions</b><span><button class="ic" id="th">Theme</button><button class="ic" id="so">Sign out</button></span></header><main id="main"></main><nav>${tabs.map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join('')}</nav>`;
+  document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.t));
+  $('#th').onclick=()=>{const d=document.documentElement,v=d.dataset.t==='dark'?'light':'dark';d.dataset.t=v;localStorage.setItem('theme',v)};
+  $('#so').onclick=()=>signOut(auth);go(tab);
+}
+function go(t){tab=t;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));({home,sell,stock,debts,money})[t]()}
+
+function home(){
+  const t=S.filter(x=>day(x.at)===day(Date.now())),owed=sum(C,'balance');
+  const low=P.filter(p=>p.qty<=p.reorder),soon=P.filter(p=>p.expiry&&(new Date(p.expiry)-Date.now())/864e5<=30);
+  const m={};S.forEach(s=>s.items.forEach(i=>m[i.name]=(m[i.name]||0)+i.qty));
+  const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const days=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()-(6-i)*864e5);return{l:d.toLocaleDateString('en',{weekday:'short'}),v:sum(S.filter(x=>day(x.at)===day(d)),'total')}});
+  const mx=Math.max(1,...days.map(d=>d.v));
+  $('#main').innerHTML=`<div class="slip"><h2>Today's till</h2>
+   <div class="row"><span>Sales</span><span class="big">${N(sum(t,'total'))}</span></div>
+   ${admin()?`<div class="row"><span>Profit</span><b>${N(sum(t,'profit'))}</b></div>`:''}
+   <div class="row"><span>Transactions</span><b>${t.length}</b></div>
+   <div class="row"><span>Owed by customers</span><b class="${owed?'red':''}">${N(owed)}</b></div>
+   <p><a class="btn wide" target="_blank" href="${wa('',`Excellentia Provisions closing summary, ${new Date().toDateString()}\nSales: ${N(sum(t,'total'))}\n${admin()?'Profit: '+N(sum(t,'profit'))+'\n':''}Transactions: ${t.length}\nOwed by customers: ${N(owed)}\nLow stock: ${low.map(p=>p.name).join(', ')||'none'}`)}">Share closing summary</a></p></div>
+   <h3>Last 7 days</h3><div class="chart">${days.map(d=>`<div><i style="height:${d.v/mx*90}px"></i>${d.l}</div>`).join('')}</div>
+   <h3>Restock list</h3>${low.map(p=>`<div class="row"><span>${esc(p.name)}<small>${p.qty} left, reorder at ${p.reorder}</small></span><span class="tag low">Order ${Math.max(p.reorder*2-p.qty,1)}</span></div>`).join('')||'<p class="mut">Everything is above reorder level.</p>'}
+   <h3>Expiring within 30 days</h3>${soon.map(p=>`<div class="row"><span>${esc(p.name)}<small>${p.expiry}</small></span><span class="tag">${p.qty} in stock</span></div>`).join('')||'<p class="mut">Nothing close to expiry.</p>'}
+   <h3>Best sellers (30 days)</h3>${top.map(([n,q])=>`<div class="row"><span>${esc(n)}</span><b>${q} sold</b></div>`).join('')||'<p class="mut">Sales will show here once you start selling.</p>'}`;
+}
+
+function sell(){
+  $('#main').innerHTML=`<input id="q" placeholder="Search item to sell"><div id="pl"></div><h3>Basket</h3><div id="cart"></div>`;
+  $('#q').oninput=plist;plist();cartView();
+}
+function plist(){
+  const q=$('#q').value.toLowerCase();
+  $('#pl').innerHTML=P.filter(p=>p.qty>0&&p.name.toLowerCase().includes(q)).slice(0,12).map(p=>`<button class="item" onclick="add('${p.id}')"><span>${esc(p.name)}<small>${p.qty} left</small></span><b>${N(p.price)}</b></button>`).join('')||'<p class="mut">No matching item in stock.</p>';
+}
+function add(id){const p=P.find(x=>x.id===id),l=cart.find(x=>x.id===id);if(l){if(l.qty<p.qty)l.qty++}else cart.push({id,qty:1});cartView()}
+function chg(id,d){const l=cart.find(x=>x.id===id),p=P.find(x=>x.id===id);l.qty=Math.min(l.qty+d,p.qty);if(l.qty<1)cart=cart.filter(x=>x!==l);cartView()}
+const subtotal=()=>cart.reduce((n,l)=>n+P.find(p=>p.id===l.id).price*l.qty,0);
+function cartView(){
+  const tot=Math.max(subtotal()-sale.dc,0);
+  $('#cart').innerHTML=cart.map(l=>{const p=P.find(x=>x.id===l.id);return `<div class="row"><span>${esc(p.name)}<small>${N(p.price)} each</small></span><span class="qty"><button onclick="chg('${l.id}',-1)">−</button>${l.qty}<button onclick="chg('${l.id}',1)">+</button></span></div>`}).join('')||'<p class="mut">Tap an item above to start a sale.</p>';
+  if(!cart.length)return;
+  $('#cart').innerHTML+=`<label>Discount (₦)<input type="number" min="0" value="${sale.dc}" onchange="sale.dc=+this.value||0;cartView()"></label>
+  <label>Payment<select onchange="sale.pay=this.value;cartView()">${['cash','transfer','pos','credit'].map(x=>`<option ${sale.pay===x?'selected':''}>${x}</option>`).join('')}</select></label>
+  ${sale.pay==='credit'?`<label>Customer<select onchange="sale.cust=this.value"><option value="">Choose customer</option>${C.map(c=>`<option value="${c.id}" ${sale.cust===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
+  <label>Paid now (₦)<input type="number" min="0" value="${sale.paid}" onchange="sale.paid=+this.value||0"></label>`:''}
+  <h2>Total ${N(tot)}</h2><button class="btn wide" onclick="finish()">Complete sale</button>`;
+}
+window.cartView=cartView;
+async function finish(){
+  const lines=cart.map(l=>{const p=P.find(x=>x.id===l.id);return `${p.name} x${l.qty}  ${N(p.price*l.qty)}`}),pay=sale.pay,cn=C.find(c=>c.id===sale.cust)?.name,sref=doc(collection(db,'sales'));
+  let tot;
+  try{
+    // One all-or-nothing step: checks stock, saves the sale, reduces stock, updates customer debt
+    await runTransaction(db,async t=>{
+      const snaps=await Promise.all(cart.map(l=>t.get(doc(db,'products',l.id))));
+      const items=[];let sub=0,prof=0;
+      snaps.forEach((s,i)=>{if(!s.exists())throw new Error('Item no longer exists');const p=s.data(),q=cart[i].qty;if(p.qty<q)throw new Error('Not enough stock for '+p.name);items.push({id:s.id,name:p.name,qty:q,price:p.price,cost:p.cost});sub+=p.price*q;prof+=(p.price-p.cost)*q});
+      tot=Math.max(sub-sale.dc,0);prof-=sale.dc;
+      const pd=pay==='credit'?Math.min(Math.max(sale.paid,0),tot):tot;
+      if(tot-pd>0&&!sale.cust)throw new Error('Pick a customer for credit sales');
+      const cs=tot-pd>0?await t.get(doc(db,'customers',sale.cust)):null;
+      t.set(sref,{items,pay,discount:sale.dc,total:tot,paid:pd,profit:prof,customer:sale.cust||null,by:auth.currentUser.uid,at:Date.now()});
+      snaps.forEach((s,i)=>t.update(s.ref,{qty:s.data().qty-cart[i].qty}));
+      if(cs)t.update(cs.ref,{balance:(cs.data().balance||0)+tot-pd});
+    });
+  }catch(e){return toast(e.message)}
+  const text=`EXCELLENTIA PROVISIONS\n${new Date().toLocaleString('en-NG')}\n\n${lines.join('\n')}\n\nDiscount: ${N(sale.dc)}\nTotal: ${N(tot)}\nPaid by: ${pay}${cn?'\nCustomer: '+cn:''}\n\nThank you for shopping with us.`;
+  cart=[];resetSale();await load(['products','customers','sales']);sell();
+  const d=$('#dlg');d.innerHTML=`<h3>Sale complete</h3><pre>${esc(text)}</pre><div class="acts"><a class="btn" target="_blank" href="${wa('',text)}">Share</a><button class="btn ghost" onclick="print()">Print</button><button class="btn ghost" onclick="$('#dlg').close()">Close</button></div>`;d.showModal();
+}
+
+function ask(title,fields,v,save,del,keys){
+  const d=$('#dlg');
+  d.innerHTML=`<form method="dialog"><h3>${title}</h3>${fields.map(([k,l,t],i)=>`<label>${l}<input name="${k}" type="${t||'text'}" ${t==='number'?'step="any"':''} ${i?'':'required'} value="${esc(v[k]??'')}"></label>`).join('')}<div class="acts"><button class="btn" value="ok">Save</button>${del?'<button class="btn danger" formnovalidate value="del">Delete</button>':''}<button class="btn ghost" formnovalidate value="x">Cancel</button></div></form>`;
+  d.onclose=async()=>{
+    const r=d.returnValue;d.returnValue='';if(r!=='ok'&&r!=='del')return;
+    try{
+      if(r==='del'){if(!confirm('Delete this record?'))return;await del()}
+      else{const o=Object.fromEntries(new FormData(d.querySelector('form')));fields.forEach(([k,,t])=>{o[k]=t==='number'?Number(o[k]||0):(o[k]===''?null:o[k])});await save(o)}
+    }catch(e){toast(e.message)}
+    await load(keys);go(tab);
+  };d.showModal();
+}
+const pf=[['name','Item name'],['category','Category'],['cost','Cost price (₦)','number'],['price','Selling price (₦)','number'],['qty','Quantity in stock','number'],['reorder','Reorder level','number'],['expiry','Expiry date','date']];
+function stock(){
+  $('#main').innerHTML=`<div class="bar"><h2>Stock</h2>${admin()?'<button class="btn sm" id="ap">Add item</button>':''}</div><input id="q" placeholder="Search stock"><div id="sl"></div>`;
+  const draw=()=>{const q=$('#q').value.toLowerCase();$('#sl').innerHTML=P.filter(p=>p.name.toLowerCase().includes(q)).map(p=>`<div class="row" ${admin()?`onclick="editP('${p.id}')"`:''}><span>${esc(p.name)}<small>${esc(p.category||'')}${p.expiry?' · exp '+p.expiry:''}</small></span><span><b>${N(p.price)}</b> <span class="tag ${p.qty<=p.reorder?'low':''}">${p.qty}</span></span></div>`).join('')||'<p class="mut">No items yet. Add your first item.</p>'};
+  $('#q').oninput=draw;draw();
+  if(admin())$('#ap').onclick=()=>ask('New item',pf,{reorder:5},o=>addDoc(collection(db,'products'),o),null,['products']);
+}
+function editP(id){const p=P.find(x=>x.id===id),r=doc(db,'products',id);ask('Edit item',pf,p,o=>updateDoc(r,o),()=>deleteDoc(r),['products'])}
+
+function debts(){
+  const owed=sum(C,'balance');
+  $('#main').innerHTML=`<div class="bar"><h2>Owed ${N(owed)}</h2><button class="btn sm" id="ac">Add customer</button></div>`+[...C].sort((a,b)=>b.balance-a.balance).map(c=>`<div class="row"><span>${esc(c.name)}<small>${esc(c.phone||'No phone')}</small></span><span class="r"><b class="${c.balance>0?'red':''}">${N(c.balance)}</b>${c.balance>0?`<button class="btn sm" onclick="pay('${c.id}')">Paid</button><a class="btn sm ghost" target="_blank" href="${wa(c.phone,`Hello ${c.name}, this is Excellentia Provisions. Your balance is ${N(c.balance)}. Please settle when you can. Thank you.`)}">Remind</a>`:''}</span></div>`).join('')||'<p class="mut">No customers yet. Add one to sell on credit.</p>';
+  $('#ac').onclick=()=>ask('New customer',[['name','Name'],['phone','Phone','tel']],{},o=>addDoc(collection(db,'customers'),{...o,balance:0}),null,['customers']);
+}
+async function pay(id){
+  const a=+prompt('Amount paid (₦)');if(!a)return;const c=C.find(x=>x.id===id);
+  try{await updateDoc(doc(db,'customers',id),{balance:Math.max(c.balance-a,0)})}catch(e){return toast(e.message)}
+  await load(['customers']);debts();
+}
+
+function money(){
+  const sod=new Date().setHours(0,0,0,0);
+  const rws=[['Today',0],['7 days',6],['30 days',29]].map(([l,d])=>{
+    const f=sod-d*864e5,s=S.filter(x=>x.at>=f),e=E.filter(x=>x.at>=f);
+    const sl=sum(s,'total'),pr=sum(s,'profit'),ex=sum(e,'amount');
+    return `<tr><td>${l}</td><td>${N(sl)}</td><td>${N(pr)}</td><td>${N(ex)}</td><td><b class="${pr-ex<0?'red':''}">${N(pr-ex)}</b></td></tr>`}).join('');
+  $('#main').innerHTML=`<h2>Profit and loss</h2><table><tr><th></th><th>Sales</th><th>Profit</th><th>Spent</th><th>Net</th></tr>${rws}</table>
+  <p><button class="btn ghost" id="ex">Download sales (CSV)</button></p>
+  <div class="bar"><h3>Expenses</h3><button class="btn sm" id="ae">Add expense</button></div>`+
+  E.map(e=>`<div class="row" onclick="editE('${e.id}')"><span>${esc(e.category||'Expense')}<small>${new Date(e.at).toLocaleDateString('en-NG')} ${esc(e.note||'')}</small></span><b>${N(e.amount)}</b></div>`).join('')||'<p class="mut">No expenses in the last 30 days.</p>';
+  $('#ae').onclick=()=>ask('New expense',ef,{},o=>addDoc(collection(db,'expenses'),{...o,at:Date.now()}),null,['expenses']);
+  $('#ex').onclick=()=>{
+    const csv='date,total,paid,payment,profit\n'+S.map(s=>[new Date(s.at).toISOString(),s.total,s.paid,s.pay,s.profit].join(',')).join('\n');
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='sales-last-30-days.csv';a.click();
+  };
+}
+const ef=[['category','Category (rent, transport, light, wages)'],['amount','Amount (₦)','number'],['note','Note']];
+function editE(id){const e=E.find(x=>x.id===id),r=doc(db,'expenses',id);ask('Edit expense',ef,e,o=>updateDoc(r,o),()=>deleteDoc(r),['expenses'])}
+Object.assign(window,{add,chg,finish,editP,editE,pay});
+</script>
+</body>
+</html>
